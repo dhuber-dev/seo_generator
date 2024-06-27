@@ -3,9 +3,6 @@ import argparse
 from docx import Document
 from openai import OpenAI
 
-template_path = 'seo_example.docx'
-# prompt = f"Schreibe einen SEO Text zum Produkt {product_name}. Für das Produkt existieren die Kategorien {product_categories}."
-
 
 def find_and_replace(doc, text2find, text2insert):
     for paragraph in doc.paragraphs:
@@ -29,8 +26,20 @@ if __name__ == "__main__":
         parser.print_help()
         exit(1)
 
-    text_to_add = 'sample text'
+    """ BUILD PROMPT """
+    prompt = (f"Schreibe einen SEO Text zum Produkt {args.product_name}. "
+              f"Für das Produkt existieren die Kategorien {args.product_categories}.")
 
+    # Open scenario text in read mode
+    scenario_text_path = 'scenario.txt'
+    with open(scenario_text_path, 'r') as file:
+        scenario = file.read()  # Read text from file
+
+    full_prompt = scenario + '\n' + prompt
+    print(full_prompt)
+
+    """ GENERATE DOCUMENT """
+    template_path = 'seo_example.docx'
     doc = Document(template_path)  # Load the template
     find_and_replace(doc, text2find='<product_name>', text2insert=args.product_name)  # Insert the product name
     doc.save(args.output_path)  # Save the new document
