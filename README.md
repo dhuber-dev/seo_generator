@@ -50,8 +50,9 @@ python main.py --company_name "Your Company" --product_name "Your Product" --pro
 - **Generate SEO Document:** Combine all functionalities to generate a formatted SEO document.
 
 ## Required Files
-You need to create a scenario text file `scenario.txt` and a Word document `seo_example.docx`.
+You need to create two text files and a Word document:
 - `scenario.txt`: Provide information about the scenario in which the LLM should see itself. The scenario positions the writer (LLM) as an SEO copywriter tasked with creating optimized content for a specific product or service. It is best to predefine the sections and their length. A sample can be found in the repository.
+- `response.txt`: Simply paste the response of your desired LLM here. It needs to be markdown to extract the sections correctly.
 - `seo_example.docx`: You can use any format or template you want and design everything in Word. The script just replaces `<flags>` with the content provided by the LLM. Thus, make sure you include flags such as `<section_x>` or `<product_name>`. An example for the content would be:
      ```
      SEO-Text for <product_name>
