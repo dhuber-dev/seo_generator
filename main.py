@@ -13,9 +13,6 @@ def find_and_replace_paragraphs(doc: Document, text2find: str, text2insert: str)
     - doc (Document): The Document object from python-docx.
     - text2find (str): The text to find within each paragraph.
     - text2insert (str): The text to replace `text2find` with.
-
-    Returns:
-    - None
     """
     for paragraph in doc.paragraphs:
         if text2find in paragraph.text:
@@ -36,49 +33,34 @@ def extract_sections(text: str) -> list:
     return re.findall(section_pattern, text, re.DOTALL)
 
 
-def copy_prompt_to_clipboard(product_name: str, product_categories: list) -> None:
+def copy_prompt_to_clipboard(product_name: str, product_categories: list, company_name: str) -> None:
     """
     Copy the generated SEO prompt to clipboard.
 
     Args:
     - product_name (str): Name of the product.
     - product_categories (list of str): Categories or types of the product.
-
-    Returns:
-    - None
     """
+    scenario = read_text_file('scenario.txt')
     prompt = f"Schreibe einen SEO Text zum Produkt {product_name}. " \
              f"Für das Produkt existieren die Kategorien {', '.join(product_categories)}."
-    pyperclip.copy(prompt)
+    pyperclip.copy(scenario.replace('<company_name>', company_name) + '\n' + prompt)
     input('The generated prompt has been copied to your clipboard. Hit enter when you have copied and saved the LLM '
           'response to "response.txt"...')
 
 
-def read_llm_response() -> str:
+def read_text_file(path: str) -> str:
     """
-    Read LLM response from response.txt.
+    Read content of .txt file from a path.
+
+    Args:
+    - path (str): Path to .txt file
 
     Returns:
     - str: Content read from the file.
     """
-    with open('response.txt', 'r', encoding='utf-8') as file:
+    with open(path, 'r', encoding='utf-8') as file:
         return file.read()
-
-
-def print_sections(sections: list) -> None:
-    """
-    Print each section extracted from LLM response.
-
-    Args:
-    - sections (list of tuples): List of tuples containing section titles and contents.
-
-    Returns:
-    - None
-    """
-    for section_title, section_content in sections:
-        print(f"### {section_title}\n")
-        print(section_content.strip())
-        print("\n")
 
 
 def generate_document(template_path: str, product_name: str, sections: list, output_path: str) -> None:
@@ -90,9 +72,6 @@ def generate_document(template_path: str, product_name: str, sections: list, out
     - product_name (str): Name of the product.
     - sections (list of tuples): List of tuples containing section titles and contents.
     - output_path (str): Output path for the resulting SEO docx file.
-
-    Returns:
-    - None
     """
     doc = Document(template_path)
     find_and_replace_paragraphs(doc, text2find='<product_name>', text2insert=product_name)
@@ -113,6 +92,7 @@ def parse_arguments() -> argparse.Namespace:
     - argparse.Namespace: Namespace object containing parsed arguments.
     """
     parser = argparse.ArgumentParser(description='Create a new SEO text.')
+    parser.add_argument('--company_name', type=str, help='Name of the company.')
     parser.add_argument('--product_name', type=str, help='Name of the product.')
     parser.add_argument('--product_categories', type=str, nargs='+',
                         help='Categories or types of the product (usually extracted from website filters).')
@@ -121,23 +101,11 @@ def parse_arguments() -> argparse.Namespace:
 
 
 def main() -> None:
-    """
-    Main function to orchestrate the entire SEO document generation process.
-
-    Returns:
-    - None
-    """
+    """Main function to orchestrate the entire SEO document generation process."""
     args = parse_arguments()
-
-    # Check if all required arguments are provided
-    if not all([args.product_name, args.product_categories, args.output_path]):
-        parser.print_help()
-        exit(1)
-
-    copy_prompt_to_clipboard(args.product_name, args.product_categories)
-    llm_response = read_llm_response()
+    copy_prompt_to_clipboard(args.product_name, args.product_categories, args.company_name)
+    llm_response = read_text_file('response.txt')
     sections = extract_sections(llm_response)
-    print_sections(sections)
     generate_document('seo_example.docx', args.product_name, sections, args.output_path)
 
 
