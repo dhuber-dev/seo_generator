@@ -1,74 +1,145 @@
 # -*- coding: utf-8 -*-
 import argparse
-from docx import Document
 import re
+from docx import Document
 import pyperclip
 
 
-def find_and_replace(doc, text2find, text2insert):
+def find_and_replace_paragraphs(doc: Document, text2find: str, text2insert: str) -> None:
+    """
+    Find and replace text in all paragraphs of the document.
+
+    Args:
+    - doc (Document): The Document object from python-docx.
+    - text2find (str): The text to find within each paragraph.
+    - text2insert (str): The text to replace `text2find` with.
+
+    Returns:
+    - None
+    """
     for paragraph in doc.paragraphs:
         if text2find in paragraph.text:
             paragraph.text = paragraph.text.replace(text2find, text2insert)
 
 
-def extract_sections(text):
+def extract_sections(text: str) -> list:
+    """
+    Extract sections from the input text using a specified pattern.
+
+    Args:
+    - text (str): The input text containing sections marked with patterns.
+
+    Returns:
+    - list: A list of tuples containing section titles and contents.
+    """
     section_pattern = r"##+ (.+?)\n\n(.+?)(?=##+ |\Z)"  # Regex pattern to capture each section
-    extracted_sections = re.findall(section_pattern, text, re.DOTALL)
-    return extracted_sections
+    return re.findall(section_pattern, text, re.DOTALL)
 
 
-if __name__ == "__main__":
-    # Create ArgumentParser object
-    parser = argparse.ArgumentParser(description='Create a new SEO text.')
+def copy_prompt_to_clipboard(product_name: str, product_categories: list) -> None:
+    """
+    Copy the generated SEO prompt to clipboard.
 
-    # Add positional arguments
-    parser.add_argument('--product_name', type=str, help='Name of the product.')
-    parser.add_argument('--product_categories', type=str, nargs='+',
-                        help='Categories or types of the product (usually extracted from website filters).')
-    parser.add_argument('--output_path', type=str, help='Output path for the resulting SEO docx-File.')
+    Args:
+    - product_name (str): Name of the product.
+    - product_categories (list of str): Categories or types of the product.
 
-    args = parser.parse_args()  # Parse the arguments from command line
-
-    if not (args.product_name and args.product_categories and args.output_path):
-        parser.print_help()
-        exit(1)
-
-    """ BUILD PROMPT """
-    prompt = (f"Schreibe einen SEO Text zum Produkt {args.product_name}. "
-              f"Für das Produkt existieren die Kategorien {args.product_categories}.")
-
-    # Open scenario text in read mode
-    scenario_text_path = 'scenario.txt'
-    with open(scenario_text_path, 'r', encoding='utf-8') as file:
-        scenario = file.read()  # Read text from file
-
-    full_prompt = scenario + '\n' + prompt
-    pyperclip.copy(full_prompt)
+    Returns:
+    - None
+    """
+    prompt = f"Schreibe einen SEO Text zum Produkt {product_name}. " \
+             f"Für das Produkt existieren die Kategorien {', '.join(product_categories)}."
+    pyperclip.copy(prompt)
     input('The generated prompt has been copied to your clipboard. Hit enter when you have copied and saved the LLM '
           'response to "response.txt"...')
 
-    """ GET LLM RESPONSE """
-    # TODO integrate LLM API of choice
+
+def read_llm_response() -> str:
+    """
+    Read LLM response from response.txt.
+
+    Returns:
+    - str: Content read from the file.
+    """
     with open('response.txt', 'r', encoding='utf-8') as file:
-        llm_response = file.read()  # Read text from file
+        return file.read()
 
-    """ EXTRACT SECTIONS FROM LLM RESPONSE """
-    sections = extract_sections(llm_response)
 
-    # Print each section
-    for section in sections:
-        section_title = section[0]
-        section_content = section[1]
+def print_sections(sections: list) -> None:
+    """
+    Print each section extracted from LLM response.
+
+    Args:
+    - sections (list of tuples): List of tuples containing section titles and contents.
+
+    Returns:
+    - None
+    """
+    for section_title, section_content in sections:
         print(f"### {section_title}\n")
         print(section_content.strip())
         print("\n")
 
-    """ GENERATE DOCUMENT """
-    template_path = 'seo_example.docx'
-    doc = Document(template_path)  # Load the template
-    find_and_replace(doc, text2find='<product_name>', text2insert=args.product_name)  # Insert the product name
 
-    for idx, (section_title, section_text) in enumerate(sections):
-        find_and_replace(doc, text2find=f'<section_{idx}>', text2insert=section_text.replace('\n\n', ' '))
-    doc.save(args.output_path)  # Save the new document
-    print(f"Text added and new document saved as {args.output_path}")
+def generate_document(template_path: str, product_name: str, sections: list, output_path: str) -> None:
+    """
+    Generate a new document based on template and extracted sections.
+
+    Args:
+    - template_path (str): Path to the template document.
+    - product_name (str): Name of the product.
+    - sections (list of tuples): List of tuples containing section titles and contents.
+    - output_path (str): Output path for the resulting SEO docx file.
+
+    Returns:
+    - None
+    """
+    doc = Document(template_path)
+    find_and_replace_paragraphs(doc, text2find='<product_name>', text2insert=product_name)
+
+    for idx, (_, section_text) in enumerate(sections):
+        # Replace section placeholders in the document, removing paragraph breaks
+        find_and_replace_paragraphs(doc, text2find=f'<section_{idx}>', text2insert=section_text.replace('\n\n', ' '))
+
+    doc.save(output_path)
+    print(f"Text added and new document saved as {output_path}")
+
+
+def parse_arguments() -> argparse.Namespace:
+    """
+    Parse command line arguments.
+
+    Returns:
+    - argparse.Namespace: Namespace object containing parsed arguments.
+    """
+    parser = argparse.ArgumentParser(description='Create a new SEO text.')
+    parser.add_argument('--product_name', type=str, help='Name of the product.')
+    parser.add_argument('--product_categories', type=str, nargs='+',
+                        help='Categories or types of the product (usually extracted from website filters).')
+    parser.add_argument('--output_path', type=str, help='Output path for the resulting SEO docx-File.')
+    return parser.parse_args()
+
+
+def main() -> None:
+    """
+    Main function to orchestrate the entire SEO document generation process.
+
+    Returns:
+    - None
+    """
+    args = parse_arguments()
+
+    # Check if all required arguments are provided
+    if not all([args.product_name, args.product_categories, args.output_path]):
+        parser.print_help()
+        exit(1)
+
+    copy_prompt_to_clipboard(args.product_name, args.product_categories)
+    llm_response = read_llm_response()
+    sections = extract_sections(llm_response)
+    print_sections(sections)
+    generate_document('seo_example.docx', args.product_name, sections, args.output_path)
+
+
+if __name__ == "__main__":
+    main()
