@@ -96,7 +96,7 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument('--product_name', type=str, help='Name of the product.')
     parser.add_argument('--product_categories', type=str, nargs='+',
                         help='Categories or types of the product (usually extracted from website filters).')
-    parser.add_argument('--output_path', default='seo_example.docx', type=str,
+    parser.add_argument('--output_path', default='test_output.docx', type=str,
                         help='Output path for the resulting SEO docx-File.')
     return parser.parse_args()
 
@@ -107,7 +107,7 @@ def main() -> None:
     copy_prompt_to_clipboard(args.product_name, args.product_categories, args.company_name)
     llm_response = read_text_file('response.txt')
     sections = extract_sections(llm_response)
-    generate_document(args.output_path, args.product_name, sections, args.output_path)
+    generate_document('seo_example.docx', args.product_name, sections, args.output_path)
 
 
 if __name__ == "__main__":
