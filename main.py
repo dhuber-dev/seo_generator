@@ -29,7 +29,7 @@ def extract_sections(text: str) -> list:
     Returns:
     - list: A list of tuples containing section titles and contents.
     """
-    section_pattern = r"##+ (.+?)\n\n(.+?)(?=##+ |\Z)"  # Regex pattern to capture each section
+    section_pattern = r"##\s*(.*?)\s*\n(?:([^<\n]*))"  # Regex pattern to capture each section
     return re.findall(section_pattern, text, re.DOTALL)
 
 
@@ -92,7 +92,7 @@ def parse_arguments() -> argparse.Namespace:
     - argparse.Namespace: Namespace object containing parsed arguments.
     """
     parser = argparse.ArgumentParser(description='Create a new SEO text.')
-    parser.add_argument('--company_name', type=str, help='Name of the company.')
+    parser.add_argument('--company_name', default='Carl Roth', type=str, help='Name of the company.')
     parser.add_argument('--product_name', type=str, help='Name of the product.')
     parser.add_argument('--product_categories', type=str, nargs='+',
                         help='Categories or types of the product (usually extracted from website filters).')
